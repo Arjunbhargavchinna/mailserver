@@ -1,0 +1,24 @@
+# MailFlow Cron Jobs
+# Run scheduler every minute
+* * * * * www-data cd /var/www/html && php bin/scheduler.php >> /var/www/html/storage/logs/cron.log 2>&1
+
+# Cleanup old logs daily at 2 AM
+0 2 * * * www-data find /var/www/html/storage/logs -name "*.log" -mtime +30 -delete
+
+# Cleanup old audit logs weekly
+0 3 * * 0 www-data cd /var/www/html && php bin/cleanup-audit-logs.php >> /var/www/html/storage/logs/cleanup.log 2>&1
+
+# Database backup daily at 3 AM
+0 3 * * * www-data cd /var/www/html && php bin/backup.php >> /var/www/html/storage/logs/backup.log 2>&1
+
+# Send digest emails daily at 8 AM
+0 8 * * * www-data cd /var/www/html && php bin/send-digest.php >> /var/www/html/storage/logs/digest.log 2>&1
+
+# Process email queue every 5 minutes
+*/5 * * * * www-data cd /var/www/html && php bin/process-email-queue.php >> /var/www/html/storage/logs/email-queue.log 2>&1
+
+# Update search index every hour
+0 * * * * www-data cd /var/www/html && php bin/update-search-index.php >> /var/www/html/storage/logs/search-index.log 2>&1
+
+# Generate reports weekly on Monday at 6 AM
+0 6 * * 1 www-data cd /var/www/html && php bin/generate-reports.php >> /var/www/html/storage/logs/reports.log 2>&1

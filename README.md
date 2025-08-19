@@ -4,6 +4,7 @@ An enterprise-grade email management system built with modern PHP architecture, 
 
 ## Features
 
+main
 ### 🔐 **Enterprise Security**
 - JWT-based authentication with refresh tokens
 - Two-factor authentication (2FA) with TOTP
@@ -54,6 +55,47 @@ An enterprise-grade email management system built with modern PHP architecture, 
 - Load balancing support
 - CDN integration
 - Multi-language support
+=======
+- **User Authentication & Authorization**
+  - Secure login/logout system
+  - Role-based access control (Administrator, Manager, User)
+  - Failed login attempt protection
+  - Session management
+
+- **Email Management**
+  - Send, receive, and organize emails
+  - Draft saving functionality
+  - Email attachments support
+  - Star/unstar emails
+  - Search functionality
+  - Folder organization (Inbox, Sent, Drafts, Spam, Trash)
+  - Reply and forward functionality with attachments
+  - Auto-save drafts
+
+- **Admin Dashboard**
+  - System status monitoring
+  - User management
+  - Audit logging
+  - Storage usage tracking
+  - Mail queue monitoring
+  - Bulk email operations
+  - Department/unit-wise management
+  - Mail server configuration
+  - SMTP integration with popular providers
+
+- **Modern UI/UX**
+  - Responsive design with Tailwind CSS
+  - Material Design icons
+  - Smooth animations and transitions
+  - Mobile-friendly interface
+>>>>>>> main
+
+- **Advanced Features**
+  - Bulk email sending to departments/units
+  - Email templates for common messages
+  - Mail server testing and configuration
+  - Department-based user organization
+  - Enhanced attachment handling
 
 ## Installation
 
@@ -118,6 +160,7 @@ An enterprise-grade email management system built with modern PHP architecture, 
 ### Core Components
 
 ```
+main
 mailflow-enterprise/
 ├── src/
 │   ├── Core/                    # Core framework components
@@ -137,18 +180,51 @@ mailflow-enterprise/
 ├── bin/                         # CLI scripts
 ├── public/                      # Web root
 └── storage/                     # File storage
+=======
+mailflow/
+│   ├── bulk-operations.php # Bulk email operations
+│   ├── mail-server.php     # Mail server configuration
+│   ├── departments.php     # Department management
+├── includes/
+│   ├── config.php          # Database and app configuration
+│   ├── auth.php            # Authentication functions
+│   └── functions.php       # Core application functions
+├── ajax/
+│   ├── toggle_star.php     # AJAX endpoint for starring emails
+│   └── delete_email.php    # AJAX endpoint for deleting emails
+│   ├── upload_attachment.php # File upload handler
+├── index.php               # Main dashboard
+├── login.php               # Login page
+├── logout.php              # Logout handler
+├── compose.php             # Email composition
+├── email.php               # Email viewing
+├── database.sql            # Database schema
+└── README.md               # This file
+>>>>>>> main
 ```
 
 ### API Documentation
 
 The API is fully documented with OpenAPI 3.0 specification:
 
+main
 - **Authentication**: `/api/v1/auth/*`
 - **Email Management**: `/api/v1/emails/*`
 - **User Management**: `/api/v1/users/*`
 - **Search**: `/api/v1/search/*`
 - **Admin**: `/api/v1/admin/*`
 - **Notifications**: `/api/v1/notifications/*`
+=======
+- `users` - User accounts and authentication
+- `emails` - Email messages and metadata
+- `email_attachments` - File attachments
+- `email_labels` - Custom labels/tags
+- `email_queue` - Email sending queue
+- `audit_logs` - System activity logging
+- `notifications` - User notifications
+- `system_settings` - Application configuration
+- `departments` - Department/unit organization
+>>>>>>> main
 
 ## Configuration
 
@@ -163,10 +239,17 @@ APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://your-domain.com
 
+main
 # Security
 JWT_SECRET=your-jwt-secret
 TWO_FACTOR_ENABLED=true
 PASSWORD_MIN_LENGTH=12
+=======
+- `POST /ajax/toggle_star.php` - Toggle email star status
+- `POST /ajax/delete_email.php` - Delete/move email to trash
+- `POST /ajax/auto_save.php` - Auto-save draft emails
+- `POST /ajax/upload_attachment.php` - Upload email attachments
+>>>>>>> main
 
 # Database
 DB_CONNECTION=mysql
@@ -176,11 +259,21 @@ DB_DATABASE=mailflow
 # Cache & Queue
 CACHE_DRIVER=redis
 QUEUE_CONNECTION=redis
-
+```
+main
 # Search
 SEARCH_DRIVER=elasticsearch
 ELASTICSEARCH_HOST=localhost:9200
-
+=======
+- Add new email folders/categories
+- Implement custom email filters
+- Extend the admin dashboard
+- Add new user roles and permissions
+- Integrate with external email services
+- Configure SMTP servers (Gmail, Outlook, custom)
+- Set up department-based email distribution
+>>>>>>> main
+```
 # Storage
 FILESYSTEM_DISK=s3
 AWS_BUCKET=your-bucket
@@ -270,6 +363,21 @@ MAIL_ENCRYPTION_ENABLED=true
 3. Make your changes
 4. Add tests
 5. Submit a pull request
+
+## Mail Server Configuration
+
+The system supports various SMTP configurations:
+
+### Gmail SMTP
+- Host: smtp.gmail.com
+- Port: 587
+- Encryption: TLS
+- Note: Use App Password for authentication
+
+### Outlook SMTP
+- Host: smtp-mail.outlook.com
+- Port: 587
+- Encryption: TLS
 
 ## License
 

@@ -9,6 +9,24 @@ requireAuth();
 $user = getCurrentUser();
 $success = '';
 $error = '';
+$replyTo = $_GET['reply'] ?? null;
+$forwardId = $_GET['forward'] ?? null;
+$originalEmail = null;
+
+// Handle reply or forward
+if ($replyTo || $forwardId) {
+    $emailId = $replyTo ?: $forwardId;
+    $stmt = $pdo->prepare("
+        SELECT e.*, 
+               COALESCE(s.name, s.email) as sender_name,
+               s.email as sender_email
+        FROM emails e
+        LEFT JOIN users s ON e.sender_id = s.id
+        WHERE e.id = ? AND (e.recipient_id = ? OR e.sender_id = ?)
+    ");
+    $stmt->execute([$emailId, $user['id'], $user['id']]);
+    $originalEmail = $stmt->fetch();
+}
 
 if ($_POST) {
     $recipientEmail = trim($_POST['recipient']);
@@ -29,9 +47,16 @@ if ($_POST) {
         } else {
             $result = sendEmail($user['id'], $recipient['id'], $subject, $body);
             if ($result['success']) {
-                $success = 'Email sent successfully!';
+                if (isset($_POST['reply_to'])) {
+                    $success = 'Reply sent successfully!';
+                } elseif (isset($_POST['forward_id'])) {
+                    $success = 'Email forwarded successfully!';
+                } else {
+                    $success = 'Email sent successfully!';
+                }
                 // Clear form
                 $_POST = [];
+                $originalEmail = null;
             } else {
                 $error = 'Failed to send email: ' . $result['message'];
             }
@@ -89,7 +114,13 @@ if ($_POST) {
                         <div>
                             <label for="recipient" class="block text-sm font-medium text-gray-700 mb-2">To</label>
                             <input type="email" id="recipient" name="recipient" required
-                                   value="<?php echo isset($_POST['recipient']) ? htmlspecialchars($_POST['recipient']) : ''; ?>"
+                                   value="<?php 
+                                   if (isset($_POST['recipient'])) {
+                                       echo htmlspecialchars($_POST['recipient']);
+                                   } elseif ($replyTo && $originalEmail) {
+                                       echo htmlspecialchars($originalEmail['sender_email']);
+                                   }
+                                   ?>"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                                    placeholder="recipient@example.com">
                         </div>
@@ -97,7 +128,15 @@ if ($_POST) {
                         <div>
                             <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
                             <input type="text" id="subject" name="subject" required
-                                   value="<?php echo isset($_POST['subject']) ? htmlspecialchars($_POST['subject']) : ''; ?>"
+                                   value="<?php 
+                                   if (isset($_POST['subject'])) {
+                                       echo htmlspecialchars($_POST['subject']);
+                                   } elseif ($replyTo && $originalEmail) {
+                                       echo 'Re: ' . htmlspecialchars($originalEmail['subject']);
+                                   } elseif ($forwardId && $originalEmail) {
+                                       echo 'Fwd: ' . htmlspecialchars($originalEmail['subject']);
+                                   }
+                                   ?>"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                                    placeholder="Email subject">
                         </div>
@@ -109,8 +148,30 @@ if ($_POST) {
                     <label for="body" class="block text-sm font-medium text-gray-700 mb-2">Message</label>
                     <textarea id="body" name="body" rows="12" required
                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                              placeholder="Write your message here..."><?php echo isset($_POST['body']) ? htmlspecialchars($_POST['body']) : ''; ?></textarea>
+                              placeholder="Write your message here..."><?php 
+                              if (isset($_POST['body'])) {
+                                  echo htmlspecialchars($_POST['body']);
+                              } elseif ($replyTo && $originalEmail) {
+                                  echo "\n\n--- Original Message ---\n";
+                                  echo "From: " . htmlspecialchars($originalEmail['sender_name']) . "\n";
+                                  echo "Date: " . date('M j, Y \a\t g:i A', strtotime($originalEmail['created_at'])) . "\n";
+                                  echo "Subject: " . htmlspecialchars($originalEmail['subject']) . "\n\n";
+                                  echo htmlspecialchars($originalEmail['body']);
+                              } elseif ($forwardId && $originalEmail) {
+                                  echo "\n\n--- Forwarded Message ---\n";
+                                  echo "From: " . htmlspecialchars($originalEmail['sender_name']) . "\n";
+                                  echo "Date: " . date('M j, Y \a\t g:i A', strtotime($originalEmail['created_at'])) . "\n";
+                                  echo "Subject: " . htmlspecialchars($originalEmail['subject']) . "\n\n";
+                                  echo htmlspecialchars($originalEmail['body']);
+                              }
+                              ?></textarea>
                 </div>
+
+                <?php if ($replyTo): ?>
+                <input type="hidden" name="reply_to" value="<?php echo $replyTo; ?>">
+                <?php elseif ($forwardId): ?>
+                <input type="hidden" name="forward_id" value="<?php echo $forwardId; ?>">
+                <?php endif; ?>
 
                 <!-- Toolbar -->
                 <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
@@ -119,7 +180,11 @@ if ($_POST) {
                             <button type="submit" 
                                     class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-md font-medium transition duration-200 flex items-center">
                                 <span class="material-symbols-outlined mr-2 text-sm">send</span>
-                                Send
+                                <?php 
+                                if ($replyTo) echo 'Send Reply';
+                                elseif ($forwardId) echo 'Forward';
+                                else echo 'Send';
+                                ?>
                             </button>
                             
                             <button type="submit" name="save_draft" value="1"
@@ -132,18 +197,6 @@ if ($_POST) {
                         <div class="flex items-center space-x-2">
                             <button type="button" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition duration-200">
                                 <span class="material-symbols-outlined">attach_file</span>
-                            </button>
-                            
-                            <button type="button" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition duration-200">
-                                <span class="material-symbols-outlined">format_bold</span>
-                            </button>
-                            
-                            <button type="button" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition duration-200">
-                                <span class="material-symbols-outlined">format_italic</span>
-                            </button>
-                            
-                            <button type="button" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition duration-200">
-                                <span class="material-symbols-outlined">link</span>
                             </button>
                         </div>
                     </div>

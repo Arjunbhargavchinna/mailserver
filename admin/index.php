@@ -141,17 +141,17 @@ $newUsersWeek = $stmt->fetchColumn();
                                 <span class="material-symbols-outlined text-primary-600 mb-2">group</span>
                                 <span class="text-sm font-medium text-gray-700">Manage Users</span>
                             </a>
+                            <a href="bulk-operations.php" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition duration-200">
+                                <span class="material-symbols-outlined text-primary-600 mb-2">send</span>
+                                <span class="text-sm font-medium text-gray-700">Bulk Operations</span>
+                            </a>
+                            <a href="mail-server.php" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition duration-200">
+                                <span class="material-symbols-outlined text-primary-600 mb-2">mail</span>
+                                <span class="text-sm font-medium text-gray-700">Mail Server</span>
+                            </a>
                             <a href="security.php" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition duration-200">
                                 <span class="material-symbols-outlined text-primary-600 mb-2">security</span>
                                 <span class="text-sm font-medium text-gray-700">Security</span>
-                            </a>
-                            <a href="reports.php" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition duration-200">
-                                <span class="material-symbols-outlined text-primary-600 mb-2">analytics</span>
-                                <span class="text-sm font-medium text-gray-700">Reports</span>
-                            </a>
-                            <a href="settings.php" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition duration-200">
-                                <span class="material-symbols-outlined text-primary-600 mb-2">settings</span>
-                                <span class="text-sm font-medium text-gray-700">Settings</span>
                             </a>
                         </div>
                     </div>

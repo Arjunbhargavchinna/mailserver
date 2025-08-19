@@ -249,6 +249,100 @@ function toggleStar($emailId, $userId) {
     return $stmt->execute([$emailId, $userId, $userId]);
 }
 
+function testSMTPConnection($host, $port, $username, $password) {
+    try {
+        $socket = fsockopen($host, $port, $errno, $errstr, 30);
+        if (!$socket) {
+            return ['success' => false, 'message' => "Cannot connect to $host:$port - $errstr"];
+        }
+        
+        fclose($socket);
+        return ['success' => true, 'message' => 'Connection successful'];
+        
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
+function forwardEmail($originalEmailId, $senderId, $recipientId, $additionalMessage = '') {
+    global $pdo;
+    
+    try {
+        // Get original email
+        $stmt = $pdo->prepare("SELECT * FROM emails WHERE id = ?");
+        $stmt->execute([$originalEmailId]);
+        $originalEmail = $stmt->fetch();
+        
+        if (!$originalEmail) {
+            return ['success' => false, 'message' => 'Original email not found'];
+        }
+        
+        // Create forwarded email
+        $subject = 'Fwd: ' . $originalEmail['subject'];
+        $body = $additionalMessage . "\n\n--- Forwarded Message ---\n" . 
+                "From: " . $originalEmail['sender_id'] . "\n" .
+                "Subject: " . $originalEmail['subject'] . "\n" .
+                "Date: " . $originalEmail['created_at'] . "\n\n" .
+                $originalEmail['body'];
+        
+        $result = sendEmail($senderId, $recipientId, $subject, $body);
+        
+        if ($result['success']) {
+            // Copy attachments
+            $stmt = $pdo->prepare("SELECT * FROM email_attachments WHERE email_id = ?");
+            $stmt->execute([$originalEmailId]);
+            $attachments = $stmt->fetchAll();
+            
+            foreach ($attachments as $attachment) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO email_attachments (email_id, filename, filepath, size, mime_type)
+                    VALUES (?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $result['email_id'],
+                    $attachment['filename'],
+                    $attachment['filepath'],
+                    $attachment['size'],
+                    $attachment['mime_type']
+                ]);
+            }
+        }
+        
+        return $result;
+        
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
+function replyToEmail($originalEmailId, $senderId, $subject, $body) {
+    global $pdo;
+    
+    try {
+        // Get original email
+        $stmt = $pdo->prepare("SELECT * FROM emails WHERE id = ?");
+        $stmt->execute([$originalEmailId]);
+        $originalEmail = $stmt->fetch();
+        
+        if (!$originalEmail) {
+            return ['success' => false, 'message' => 'Original email not found'];
+        }
+        
+        // Determine recipient (reply to sender)
+        $recipientId = $originalEmail['sender_id'];
+        
+        // Add "Re:" prefix if not already present
+        if (!str_starts_with($subject, 'Re:')) {
+            $subject = 'Re: ' . $subject;
+        }
+        
+        return sendEmail($senderId, $recipientId, $subject, $body);
+        
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
 function searchEmails($userId, $query, $limit = EMAILS_PER_PAGE) {
     global $pdo;
     
@@ -282,5 +376,21 @@ function formatFileSize($bytes) {
     } else {
         return $bytes . ' bytes';
     }
+}
+
+function getDepartments() {
+    global $pdo;
+    
+    $stmt = $pdo->prepare("SELECT DISTINCT department FROM users WHERE department IS NOT NULL AND department != '' ORDER BY department");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
+
+function getUsersByDepartment($department) {
+    global $pdo;
+    
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE department = ? AND is_active = 1 ORDER BY name");
+    $stmt->execute([$department]);
+    return $stmt->fetchAll();
 }
 ?>
